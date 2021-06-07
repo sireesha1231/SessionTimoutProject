@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - My ASP.NET Application</title>
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+
+</head>
+<body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                @Html.ActionLink("Application name", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li>@Html.ActionLink("Home", "Index", "Home")</li>
+                    <li>@Html.ActionLink("About", "About", "Home")</li>
+                    <li>@Html.ActionLink("Contact", "Contact", "Home")</li>
+                    <li style="color:white; margin-top:15px;" id="displaySessionTimeOut"></li>
+                </ul>
+
+                @Html.Partial("_LoginPartial")
+            </div>
+        </div>
+    </div>
+    <div class="container body-content">
+        @RenderBody()
+        <hr />
+        <footer>
+            <p>&copy; @DateTime.Now.Year - My ASP.NET Application</p>
+        </footer>
+    </div>
+
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @RenderSection("scripts", required: false)
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script>
+
+        var notifClicked = false;
+        var notiCount = 0;
+
+        var bodymessage = "";
+        setInterval(function () {
+            $.get("/Home/getSessionTimeOutDuration", function (data) {
+                console.log(data);
+                bodymessage = data;
+                if (data == "LOGOUT") {
+                    console.log("logout successfully")
+                    location.reload(true);
+                } else if (data == "NOSESSION") {
+                    console.log("No session Found");
+                    //notifyMe();
+                } else if (parseInt(data) > 1) {
+                    //console.log(" one minute");
+                    $("#displaySessionTimeOut").html(`<span>Your session will be expire in ` + parseFloat(data).toFixed(1) + `minutes</span>`)
+                    notifyMe();
+                } else if (parseInt(data) ==0) {
+                    notifyMe();
+                    $("#displaySessionTimeOut").html(`<span>Your session will be expire in ` + parseFloat(data).toFixed(1) + `minutes</span>`)
+                }
+
+            })
+        }, 25000)
+
+
+    
+   
+
+
+        //Push Notification
+
+
+        //$(document).ready(function () {
+        //    //notifyMe();
+        //});
+
+
+        function notifyMe() {
+         //   console.log("Hit Notify me");
+            if (!("Notification" in window)) {
+                alert("This browser does not support desktop notification");
+            }
+            else if (Notification.permission === "granted") {
+                if(notiCount <= 0)
+                    createNotification();
+
+            }
+            else if (Notification.permission !== 'denied') {
+                Notification.requestPermission(function (permission) {
+                    if (!('permission' in Notification)) {
+                        Notification.permission = permission;
+                    }
+                    if (permission === 'granted') {
+
+                        createNotification();
+                    }
+                });
+            }
+        }
+
+        function createNotification() {
+            notiCount++;
+            //var bod = ``+`<input type="button" name="name" value="" />`+``;
+            var options = {
+                body: `Your session will be expire in ` + parseFloat(bodymessage).toFixed(1) + ` `,
+                icon: '',
+                dir: 'ltr',
+                
+            };
+
+            var notification = new Notification("Notification from CPI Application", options);
+
+            notification.onclick = function () {
+                
+                $.get("/Account/getREsrt", function (data) {
+                    console.log(data);
+                    notiCount = 0;
+                });
+            };
+        }
+
+    </script>
+</body>
+</html>
